@@ -1,0 +1,30 @@
+name: Windows RDP
+on:
+  workflow_dispatch:
+
+jobs:
+  rdp:
+    runs-on: windows-latest
+    timeout-minutes: 360
+    steps:
+      - name: Habilitar Área de Trabalho Remota
+        run: |
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name fDenyTSConnections -Value 0
+          Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+          $senha = ConvertTo-SecureString "Roblox@2026" -AsPlainText -Force
+          Set-LocalUser -Name "runneradmin" -Password $senha
+        shell: powershell
+
+      - name: Baixar ngrok
+        run: |
+          Invoke-WebRequest -Uri "https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip" -OutFile "ngrok.zip"
+          Expand-Archive -Path "ngrok.zip" -DestinationPath "." -Force
+        shell: powershell
+
+      - name: Conectar ngrok
+        env:
+          NGROK_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+        run: |
+          .\ngrok.exe config add-authtoken $env:NGROK_TOKEN
+          .\ngrok.exe tcp 3389 --log stdout
+        shell: powershell
